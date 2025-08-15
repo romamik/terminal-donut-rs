@@ -1,4 +1,7 @@
-use std::time::{self, Duration};
+use std::{
+    fmt::Write,
+    time::{self, Duration},
+};
 
 use crossterm::{cursor, event, execute, terminal};
 use glam::{Mat4, Vec3, vec3};
@@ -127,11 +130,9 @@ fn cast_ray(scene: &impl Sdf, start: Vec3, ray: Vec3, light_dir: Vec3) -> f32 {
 }
 
 pub trait Output {
-    fn reset(&self);
     fn size(&self) -> (usize, usize);
     fn aspect(&self) -> f32;
-    fn print_char(&self, c: u8);
-    fn println(&self);
+    fn present(&self, frame: &str);
 }
 
 pub fn render_scene(
@@ -143,8 +144,6 @@ pub fn render_scene(
     light_dir: Vec3,
     output: &impl Output,
 ) {
-    output.reset();
-
     let forward = (camera_look_at - camera).normalize_or(Vec3::NEG_Z);
     let right = forward.cross(camera_up).normalize_or(Vec3::X);
     let up = forward.cross(right).normalize_or(Vec3::NEG_Y);
@@ -163,9 +162,10 @@ pub fn render_scene(
         )
     };
 
+    let mut buffer = String::with_capacity((screen_w + 1) * screen_h);
     for screen_y in 0..screen_h {
         if screen_y != 0 {
-            // output.println();
+            // buffer.write_char('\n').unwrap()
         }
         for screen_x in 0..screen_w {
             let x = camera + right * (camera_width * (screen_x as f32 / screen_w as f32 - 0.5));
@@ -173,18 +173,15 @@ pub fn render_scene(
             let intensity = cast_ray(scene, x + y, forward, light_dir);
             let char_index = ((intensity.clamp(0.0, 1.0) * (SYMBOLS.len() as f32)) as usize)
                 .clamp(0, SYMBOLS.len() - 1);
-            output.print_char(SYMBOLS[char_index]);
+            buffer.write_char(SYMBOLS[char_index] as char).unwrap();
         }
     }
+    output.present(&buffer);
 }
 
 struct CrosstermOutput;
 
 impl Output for CrosstermOutput {
-    fn reset(&self) {
-        execute!(std::io::stdout(), cursor::MoveTo(1, 1)).unwrap();
-    }
-
     fn aspect(&self) -> f32 {
         0.5
     }
@@ -194,18 +191,16 @@ impl Output for CrosstermOutput {
         (w as usize, h as usize)
     }
 
-    fn print_char(&self, c: u8) {
-        print!("{}", c as char)
-    }
-
-    fn println(&self) {
-        println!()
+    fn present(&self, frame: &str) {
+        execute!(std::io::stdout(), cursor::MoveTo(0, 0)).unwrap();
+        print!("{frame}")
     }
 }
 
 fn main() {
-    let scene = |time: f32| {
-        [
+    let scene = |time: f32| SdfTransform {
+        mat: Mat4::from_rotation_x(time) * Mat4::from_rotation_y(time),
+        inner: [
             SdfSphere {
                 center: Vec3::ZERO,
                 radius: 7.0,
@@ -222,7 +217,7 @@ fn main() {
                 tube_radius: 2.0,
             }
             .boxed(),
-        ]
+        ],
     };
 
     terminal::enable_raw_mode().unwrap();
