@@ -1,0 +1,42 @@
+name: Build and Deploy WASM
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Setup Rust
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          override: true
+
+      # Install just
+      - name: Install just
+        run: cargo install just
+
+      # Install needed tools
+      - name: Install tools
+        run: just install-tools
+
+      # Build Rust -> Wasm
+      - name: Build project
+        run: just build-wasm
+
+      # Deploy to GitHub Pages
+      # - name: Deploy to GitHub Pages
+      #   uses: peaceiris/actions-gh-pages@v4
+      #   with:
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      #     publish_dir: ./pkg  # Directory containing generated wasm + JS
