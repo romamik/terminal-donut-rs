@@ -1,0 +1,36 @@
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+    <style>
+      #pre {
+        width: 80ch;
+        white-space: pre-wrap;
+        word-break: break-all;
+        background-color: black;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <pre id="pre"></pre>
+    <script type="module">
+      import init, { wasm_render } from "../pkg/terminal_donut_rs.js";
+
+      async function run() {
+        await init();
+
+        let startTime = Date.now();
+        function frame() {
+          let time = (Date.now() - startTime) / 1000.0;
+          wasm_render(time, 80, 40, document.getElementById("pre"));
+
+          requestAnimationFrame(frame);
+        }
+
+        frame();
+      }
+
+      run();
+    </script>
+  </body>
+</html>

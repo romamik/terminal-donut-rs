@@ -22,7 +22,12 @@ fn main() {
         let (screen_width, screen_height) = crossterm::terminal::size().unwrap();
         let time = (Instant::now() - start_time).as_secs_f32();
         let scene = scene(time);
-        let buffer = render_scene(&scene, screen_width as usize, screen_height as usize, 0.5);
+        let buffer = render_scene(
+            &scene,
+            screen_width as usize - 1, // -1 to avoid automatic line breaks
+            screen_height as usize,
+            0.5,
+        );
 
         execute!(std::io::stdout(), cursor::MoveTo(0, 0)).unwrap();
         print!("{buffer}");

@@ -3,7 +3,16 @@ name = "terminal-donut-rs"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
-crossterm = "0.29.0"
-enum_dispatch = "0.3.13"
 glam = "0.30.5"
+crossterm = { version = "0.29.0", optional = true }
+wasm-bindgen = { version = "0.2.100", optional = true }
+web-sys = { version = "0.3.77", features = ["HtmlPreElement"], optional = true }
+
+[features]
+default = ["native"]
+native = ["crossterm"]
+wasm = ["wasm-bindgen", "web-sys"]
