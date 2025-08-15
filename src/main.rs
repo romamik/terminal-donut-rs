@@ -96,7 +96,7 @@ pub fn render_scene(
     camera: Vec3,
     camera_look_at: Vec3,
     camera_up: Vec3,
-    camera_width: f32,
+    camera_size: f32,
     light_dir: Vec3,
     output: &impl Output,
 ) {
@@ -106,7 +106,17 @@ pub fn render_scene(
 
     let (screen_w, screen_h) = output.size();
 
-    let camera_height = camera_width * screen_h as f32 / screen_w as f32 / output.aspect();
+    let (camera_width, camera_height) = if screen_w > screen_h {
+        (
+            camera_size * screen_w as f32 / screen_h as f32 * output.aspect(),
+            camera_size,
+        )
+    } else {
+        (
+            camera_size,
+            camera_size * screen_h as f32 / screen_w as f32 / output.aspect(),
+        )
+    };
 
     for screen_y in 0..screen_h {
         if screen_y != 0 {
