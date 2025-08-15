@@ -8,6 +8,33 @@ const SYMBOLS: &[u8] = b" .,:;i1tfLCG08@";
 
 pub trait Sdf {
     fn distance(&self, pt: Vec3) -> f32;
+
+    fn boxed(self) -> Box<dyn Sdf>
+    where
+        Self: Sized + 'static,
+    {
+        Box::new(self)
+    }
+}
+
+impl<I, T> Sdf for I
+where
+    for<'a> &'a I: IntoIterator<Item = &'a T>,
+    T: Sdf,
+{
+    fn distance(&self, pt: Vec3) -> f32 {
+        let mut distance = f32::MAX;
+        for inner in self.into_iter() {
+            distance = distance.min(inner.distance(pt))
+        }
+        distance
+    }
+}
+
+impl Sdf for Box<dyn Sdf> {
+    fn distance(&self, pt: Vec3) -> f32 {
+        self.as_ref().distance(pt)
+    }
 }
 
 pub struct SdfSphere {
@@ -35,12 +62,12 @@ impl Sdf for SdfBox {
     }
 }
 
-pub struct Transform<Inner> {
+pub struct SdfTransform<Inner> {
     pub mat: Mat4,
     pub inner: Inner,
 }
 
-impl<Inner: Sdf> Sdf for Transform<Inner> {
+impl<Inner: Sdf> Sdf for SdfTransform<Inner> {
     fn distance(&self, pt: Vec3) -> f32 {
         self.inner.distance((self.mat * pt.extend(1.0)).truncate())
     }
@@ -159,14 +186,18 @@ impl Output for CrosstermOutput {
 }
 
 fn main() {
-    // let scene = SdfSphere {
-    //     center: Vec3::ZERO,
-    //     radius: 5.0,
-    // };
-    let scene = SdfBox {
-        center: Vec3::ZERO,
-        half_size: vec3(5.0, 2.0, 3.0),
-    };
+    let scene = [
+        SdfSphere {
+            center: Vec3::ZERO,
+            radius: 7.0,
+        }
+        .boxed(),
+        SdfBox {
+            center: Vec3::ZERO,
+            half_size: vec3(10.0, 3.0, 3.0),
+        }
+        .boxed(),
+    ];
     render_scene(
         &scene,
         vec3(10.0, 10.0, 10.0),
