@@ -2,8 +2,8 @@
     "rust-analyzer.check.command": "clippy",
     "rust-analyzer.checkOnSave": true,
 
-    // uncomment for wasm target:
-    "rust-analyzer.cargo.target": "wasm32-unknown-unknown",
-    "rust-analyzer.cargo.features": ["wasm"],
-    "rust-analyzer.cargo.noDefaultFeatures": true
+    // comment/uncomment for wasm/native target:
+    // "rust-analyzer.cargo.target": "wasm32-unknown-unknown",
+    // "rust-analyzer.cargo.features": ["wasm"],
+    // "rust-analyzer.cargo.noDefaultFeatures": true
 }

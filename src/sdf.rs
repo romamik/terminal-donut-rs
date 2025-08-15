@@ -130,7 +130,7 @@ pub fn render_scene(
     screen_height: usize,
     screen_aspect: f32,
 ) -> String {
-    let forward = (scene.camera_up - scene.camera_pos).normalize_or(Vec3::NEG_Z);
+    let forward = (scene.look_at - scene.camera_pos).normalize_or(Vec3::NEG_Z);
     let right = forward.cross(scene.camera_up).normalize_or(Vec3::X);
     let up = forward.cross(right).normalize_or(Vec3::NEG_Y);
 
@@ -148,11 +148,14 @@ pub fn render_scene(
 
     let mut buffer = String::with_capacity((screen_width + 1) * screen_height);
     for screen_y in 0..screen_height {
+        if screen_y != 0 {
+            buffer.write_char('\n').unwrap();
+        }
         for screen_x in 0..screen_width {
             let x = scene.camera_pos
-                + right * (camera_width * (screen_x as f32 / screen_width as f32 - 0.5));
+                + right * (camera_width * (screen_x as f32 / (screen_width - 1) as f32 - 0.5));
             let y = scene.camera_pos
-                + up * (camera_height * (screen_y as f32 / screen_height as f32 - 0.5));
+                + up * (camera_height * (screen_y as f32 / (screen_height - 1) as f32 - 0.5));
             let intensity = cast_ray(&scene.scene, x + y, forward, scene.light_dir);
             let char_index = ((intensity.clamp(0.0, 1.0) * (SYMBOLS.len() as f32)) as usize)
                 .clamp(0, SYMBOLS.len() - 1);
@@ -199,7 +202,7 @@ pub fn scene(time: f32) -> Scene {
         camera_pos: vec3(0.0, 0.0, 20.0),
         look_at: Vec3::ZERO,
         camera_up: vec3(0.0, 1.0, 0.0),
-        camera_size: 30.0,
+        camera_size: 25.0,
         light_dir: vec3(1.0, -1.0, -1.0),
     }
 }
