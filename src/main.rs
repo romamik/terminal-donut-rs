@@ -1,4 +1,6 @@
-use crossterm::{cursor, execute};
+use std::time::{self, Duration};
+
+use crossterm::{cursor, event, execute, terminal};
 use glam::{Mat4, Vec3, vec3};
 
 const MAX_STEPS: i32 = 100;
@@ -62,6 +64,20 @@ impl Sdf for SdfBox {
     }
 }
 
+pub struct SdfDonut {
+    pub center: Vec3,
+    pub radius: f32,
+    pub tube_radius: f32,
+}
+
+impl Sdf for SdfDonut {
+    fn distance(&self, pt: Vec3) -> f32 {
+        let p = pt - self.center;
+        let q = glam::Vec2::new((p.x * p.x + p.y * p.y).sqrt() - self.radius, p.z);
+        q.length() - self.tube_radius
+    }
+}
+
 pub struct SdfTransform<Inner> {
     pub mat: Mat4,
     pub inner: Inner,
@@ -87,7 +103,7 @@ fn estimate_normal(scene: &impl Sdf, p: Vec3) -> Vec3 {
 }
 
 fn lambert_shading(normal: Vec3, light_dir: Vec3) -> f32 {
-    normal.dot(light_dir).max(0.0)
+    normal.dot(-light_dir).max(0.0)
 }
 
 fn cast_ray(scene: &impl Sdf, start: Vec3, ray: Vec3, light_dir: Vec3) -> f32 {
@@ -127,6 +143,8 @@ pub fn render_scene(
     light_dir: Vec3,
     output: &impl Output,
 ) {
+    output.reset();
+
     let forward = (camera_look_at - camera).normalize_or(Vec3::NEG_Z);
     let right = forward.cross(camera_up).normalize_or(Vec3::X);
     let up = forward.cross(right).normalize_or(Vec3::NEG_Y);
@@ -147,7 +165,7 @@ pub fn render_scene(
 
     for screen_y in 0..screen_h {
         if screen_y != 0 {
-            output.println();
+            // output.println();
         }
         for screen_x in 0..screen_w {
             let x = camera + right * (camera_width * (screen_x as f32 / screen_w as f32 - 0.5));
@@ -164,7 +182,7 @@ struct CrosstermOutput;
 
 impl Output for CrosstermOutput {
     fn reset(&self) {
-        execute!(std::io::stdout(), cursor::MoveTo(0, 0)).unwrap();
+        execute!(std::io::stdout(), cursor::MoveTo(1, 1)).unwrap();
     }
 
     fn aspect(&self) -> f32 {
@@ -186,25 +204,63 @@ impl Output for CrosstermOutput {
 }
 
 fn main() {
-    let scene = [
-        SdfSphere {
-            center: Vec3::ZERO,
-            radius: 7.0,
+    let scene = |time: f32| {
+        [
+            SdfSphere {
+                center: Vec3::ZERO,
+                radius: 7.0,
+            }
+            .boxed(),
+            SdfBox {
+                center: vec3(f32::sin(time * 2.0) * 3.0, 0.0, 0.0),
+                half_size: vec3(10.0, 3.0, 3.0),
+            }
+            .boxed(),
+            SdfDonut {
+                center: Vec3::ZERO,
+                radius: 10.0,
+                tube_radius: 2.0,
+            }
+            .boxed(),
+        ]
+    };
+
+    terminal::enable_raw_mode().unwrap();
+    execute!(
+        std::io::stdout(),
+        terminal::EnterAlternateScreen,
+        cursor::Hide
+    )
+    .unwrap();
+
+    let start_time = time::Instant::now();
+
+    loop {
+        if event::poll(Duration::from_millis(0)).unwrap() {
+            if let event::Event::Key(event::KeyEvent { code: _, .. }) = event::read().unwrap() {
+                break;
+            }
         }
-        .boxed(),
-        SdfBox {
-            center: Vec3::ZERO,
-            half_size: vec3(10.0, 3.0, 3.0),
-        }
-        .boxed(),
-    ];
-    render_scene(
-        &scene,
-        vec3(10.0, 10.0, 10.0),
-        vec3(0.0, 0.0, 0.0),
-        vec3(0.0, 1.0, 0.0),
-        20.0,
-        vec3(0.0, 1.0, 0.0),
-        &CrosstermOutput,
-    );
+
+        let time = (time::Instant::now() - start_time).as_secs_f32();
+
+        render_scene(
+            &scene(time),
+            vec3(0.0, 0.0, 10.0),
+            vec3(0.0, 0.0, 0.0),
+            vec3(0.0, 1.0, 0.0),
+            20.0,
+            vec3(1.0, -1.0, -1.0),
+            &CrosstermOutput,
+        );
+    }
+
+    execute!(
+        std::io::stdout(),
+        terminal::LeaveAlternateScreen,
+        cursor::Show
+    )
+    .unwrap();
+
+    terminal::disable_raw_mode().unwrap();
 }
