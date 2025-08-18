@@ -28,15 +28,7 @@ jobs:
     steps:
       # Checkout code
       - name: Checkout repository
-        uses: actions/checkout@v3
-
-      # Setup Rust
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: wasm32-unknown-unknown
-          override: true
+        uses: actions/checkout@v4
 
       # Install just
       - name: Install just
