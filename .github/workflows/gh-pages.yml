@@ -40,7 +40,10 @@ jobs:
 
       # Install just
       - name: Install just
-        run: cargo install just --locked
+        run: |
+          mkdir -p $HOME/bin
+          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to $HOME/bin
+          echo "$HOME/bin" >> $GITHUB_PATH
 
       # Install needed tools
       - name: Install tools
