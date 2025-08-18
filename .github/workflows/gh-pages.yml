@@ -32,15 +32,13 @@ jobs:
 
       # Install just
       - name: Install just
-        run: |
-          mkdir -p $HOME/bin
-          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to $HOME/bin
-          echo "$HOME/bin" >> $GITHUB_PATH
+        uses: taiki-e/install-action@just
 
       # Install needed tools
       - name: Install tools
         run: just install-tools
-        
+
+      # Setup pages
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v5
@@ -49,6 +47,7 @@ jobs:
       - name: Build project
         run: just build-wasm
 
+      # Upload to pages
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
